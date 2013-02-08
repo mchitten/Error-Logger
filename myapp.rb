@@ -58,7 +58,8 @@ class App < Sinatra::Base
 #time sudo grep "Notice:" '/var/log/dosomething/dosomething.2013-02-07.log' | tail -n 150 | head -n 150
     @logs = []
     @i = 0
-    r = `grep "#{filter}" dsl.log | tail -n 150 | head -n 150`.split(/\n/).reverse
+    #r = `grep "#{filter}" dsl.log | tail -n 150 | head -n 150`.split(/\n/).reverse
+    r = `tac 'dsl.log' | grep -m150 "#{filter}" | tail -n150`.split(/\n/).reverse
     #r = `sed -n 
     r.each do |l|
       if l.include? "#{filter}"
