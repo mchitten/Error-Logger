@@ -23,6 +23,13 @@
         box-shadow: 0px 0px 3px #808080;
         cursor: pointer;
       }
+
+      footer {
+        padding: 10px 0px;
+        margin-top: 30px;
+        border-top: 1px solid;
+     }
+
     </style>
 
     <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
@@ -31,7 +38,18 @@
       var plus = 150;
       $(document).ready(function() {
         $('#load-more').click(function() {
-          $.post('/more/' + plus, {}, function(response) {
+          var path = '/more/' + plus;
+          if (document.location.pathname.indexOf('filter')) {
+            path = '/more-filter/' + document.location.pathname.replace('/filter/', '') + '/' + plus;
+          }
+
+          $.post(path, {}, function(response) {
+            if (response.indexOf('<!--') !== -1) {
+              var m = response.match(/\<\!\-\- (\d+) results \-\-\>/);
+              if (parseInt(m[1]) < 150) {
+                $('#load-more').remove();
+              }
+            }
             $(response).appendTo($('table'));
           });
 
@@ -58,5 +76,10 @@
     <div id="main">
       {{{yield}}}
     </div>
+
+    <footer>
+      Page executed super quickly, given the size of the log file.
+      <div>Copyright &copy; 2012 DoSomething.org</div>
+    </footer>
   </body>
 </html>

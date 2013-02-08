@@ -4,6 +4,9 @@ class App
       def logs
       	@logs || "Nothing yet..."
       end
+      def count
+      	@count
+      end
     end
   end
 end

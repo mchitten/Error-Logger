@@ -7,6 +7,12 @@ class App
       def logs
       	@logs || "Nothing yet..."
       end
+      def show_button
+        @show_button
+      end
+      def count
+        @count
+      end
     end
   end
 end
