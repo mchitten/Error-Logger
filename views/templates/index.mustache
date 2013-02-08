@@ -1,0 +1,26 @@
+{{ content }}
+
+<table border="1" cellpadding="3" cellspacing="0">
+<thead>
+  <th width="10%">Date</th>
+  <th width="10%">Level</th>
+  <th width="25%">On page</th>
+  <th width="25%">Referrer</th>
+  <th width="30%">Message</th>
+  <th width="30%">Line</th>
+  <th width="30%">File</th>
+</thead>
+{{#logs}}
+<tr class="{{ level_class }}">
+	<td>{{ date }}</td>
+	<td>{{ level }}</td>
+	<td title="{{ full_referer }}">{{ referer }}</td>
+	<td title="{{ full_errorat }}">{{ errorat }}</td>
+	<td>{{ errormsg }}</td>
+	<td>{{ error_line }}</td>
+	<td>{{ error_file }}</td>
+</tr>
+{{/logs}}
+</table>
+
+<p id="load-more">Load more...</p>
