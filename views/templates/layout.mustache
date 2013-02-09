@@ -43,8 +43,11 @@
             path = '/more-filter/' + document.location.pathname.replace('/filter/', '') + '/' + plus;
           }
 
+          console.log(path);
+
           $.post(path, {}, function(response) {
-            if (response.indexOf('<!--') !== -1) {
+            console.log(response.indexOf('<!--'));
+            if (response.indexOf('<!--') !== false) {
               var m = response.match(/\<\!\-\- (\d+) results \-\-\>/);
               if (parseInt(m[1]) < 150) {
                 $('#load-more').remove();
