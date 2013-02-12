@@ -5,7 +5,70 @@
       {{title}}
     </title>
     <style>
-      body { background: #eee; font-size: 10px; }
+      body {
+        background: #eee;
+        font-size: 12px;
+        font-family: 'Trebuchet MS', 'sans-serif';
+        margin: 0px;
+      }
+      header {
+        width: 100%;
+        background: #1e1e1e;
+        height: 35px;
+        color: #eee;
+        margin: 0px 0px 10px #808080;
+      }
+
+      header h1 {
+        margin: 2px 15px;
+        padding: 0px;
+        float: left;
+      }
+
+      header #filters {
+        float: right;
+        margin-right: 30px;
+        margin: 10px 30px 0px 0px;
+        padding: 0px;
+      }
+
+      header ul {
+        padding: 0px;
+        margin: 0px;
+        float: left;
+      }
+
+      header ul li { 
+        position: relative;}
+
+      header ul li > ul {
+        float: none;
+        display: none;
+        position: absolute;
+        background: rgba(0, 0, 0, 0.7);
+        margin-top: 0px;
+      }
+
+      header ul li > ul li a {
+        color: #fff;
+        padding: 5px 15px;
+        display: block;
+      }
+
+      header ul li:hover > ul {
+        display: inline;
+        clear: left;
+      }
+
+      header input[type="search"] {
+        float: left;
+        margin: -2px 0px 0px 20px;
+      }
+
+      #main {
+        margin: 10px;
+      }
+
       li { list-style: none !important; }
       .critical { background: #ffcccc; }
       .warning { background: #ffeeee; }
@@ -43,8 +106,6 @@
             path = '/more-filter/' + document.location.pathname.replace('/filter/', '') + '/' + plus;
           }
 
-          console.log(path);
-
           $.post(path, {}, function(response) {
             console.log(response.indexOf('<!--'));
             if (response.indexOf('<!--') !== false) {
@@ -58,6 +119,12 @@
 
           plus += 150;
         });
+
+        $('#search').keydown(function(e) {
+          if (e.which == 13) {
+            document.location = '/search/' + $(this).val();
+          }
+        });
       });
     -->
     </script>
@@ -65,15 +132,21 @@
   <body>
     <header>
       <h1>Error Log</h1>
-      <ul>
-        <li>
-          Filter by...
-          <ul>
-            <li>Severity</li>
-          </ul>
-        </li>
-        <li>Set New Filter</li>
-      </ul>
+      <div id="filters">
+        <ul>
+          <li>
+            Severity Filter
+            <ul>
+              <li><a href="/filter/notice">Notice</a></li>
+              <li><a href="/filter/warning">Warning</a></li>
+              <li><a href="/filter/error">Error</a></li>
+              <li><a href="/filter/exception">Exception</a></li>
+            </ul>
+          </li>
+        </ul>
+
+        <input id="search" type="search" placeholder="Search the logs..." />
+      </div>
     </header>
 
     <div id="main">

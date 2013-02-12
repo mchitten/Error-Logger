@@ -3,10 +3,27 @@ require 'sinatra/base'
 require 'mustache/sinatra'
 require './f'
 require 'yaml'
+require 'mongo'
+require 'mongoid'
+include Mongo
+require 'date'
 
 class App < Sinatra::Base
   register Mustache::Sinatra
   require './views/layout'
+
+  @@environment = 'development'
+  @@config = {}
+
+  configure do
+    conn = Mongo::Connection.new.db('errors')
+    set :mongo, conn
+  end
+
+  def initialize
+    super()
+    @@config = YAML.load_file(File.dirname(__FILE__) + '/config/config.yml')[@@environment]
+  end
 
   # Makes rows_per_page variable accessible.
   @@rows_per_page = 150
@@ -21,20 +38,42 @@ class App < Sinatra::Base
   }
 
 
+  post '/write/?' do
+    settings.mongo['errors'].insert params
+  end
+
+  get '/f' do
+    content_type :json
+
+    settings.mongo['errors'].find.to_a.to_json
+  end
+
+  get '/d' do
+    content_type :text
+    settings.mongo['errors'].remove
+  end
+
   get '/' do
     @content = "Giraffe"
     @logs = []
     @content = ''
 
-    @logs = get_file_data()
+    @logs = db_get_data()
     @show_button = true
+
+    mustache :index
+  end
+
+  get '/search/*' do |term|
+    @logs = db_get_data(0, '', term)
+    @content = "Found #{@logs.length} results."
 
     mustache :index
   end
 
   post '/more/*' do
     n = params[:splat][0].to_i
-    @logs = get_file_data(n)
+    @logs = db_get_data(n)
     @content = ''
 
     mustache :more_posts, :layout => false
@@ -42,13 +81,9 @@ class App < Sinatra::Base
 
   post '/more-filter/*/*' do
     f = params[:splat][0]
-    n = params[:splat][1]
+    n = params[:splat][1].to_i
 
-    if f != 'Exception'
-      filter = f + ':'
-    end
-
-    @logs = get_filtered_data(n, f)
+    @logs = db_get_data(n, f)
     @content = ''
     @count = @logs.length
 
@@ -58,11 +93,7 @@ class App < Sinatra::Base
   get '/filter/*' do |filter|
     f = params[:splat][0]
 
-    if filter != 'Exception'
-      filter = filter + ':'
-    end
-
-    @logs = get_filtered_data(0, filter)
+    @logs = db_get_data(0, filter)
 
     @content = "Found #{@logs.count}"
     @show_button = true
@@ -77,6 +108,102 @@ class App < Sinatra::Base
     content_type 'text/plain'
     mustache :nolayout, :layout => false
   end
+end
+
+def db_get_data(offset=0, filter='', searchterm = '')
+  level = {
+    1 => 'Fatal Error',
+    2 => 'Warning',
+    4 => 'Parse Error',
+    8 => 'Notice',
+    16 => 'Core Error',
+    32 => 'Core Warning',
+    64 => 'Fatal Compile Error',
+    128 => 'Fatal Compile Warning',
+    256 => 'User Error',
+    512 => 'User Warning',
+    1024 => 'User Notice',
+    2048 => 'Strict Notice',
+    4096 => 'Recoverable Fatal Error',
+    8192 => 'Deprecated Notice',
+    16384 => 'User Deprecated Notice',
+  }
+  level_class = {
+    1 => 'error',
+    2 => 'warning',
+    4 => 'warning',
+    8 => 'notice',
+    16 => 'error',
+    32 => 'warning',
+    64 => 'exception',
+    128 => 'exception',
+    256 => 'error',
+    512 => 'warning',
+    1024 => 'notice',
+    2048 => 'notice',
+    4096 => 'exception',
+    8192 => 'notice',
+    16384 => 'notice',
+  }
+
+  @fargs = {}
+  @sargs = {}
+
+  if (!filter.empty?)
+    ls = []
+    level_class.each do |k, v|
+      if (v == filter.downcase)
+        ls.push(k.to_s)
+      end
+    end
+
+    @fargs = {'level' => { '$in' => ls } }
+    errors = settings.mongo['errors']
+  else
+    errors = settings.mongo['errors']
+  end
+
+  if (!searchterm.empty?)
+    @sargs = {'message' => { '$regex' => ".*#{searchterm}.*" } }
+  end
+
+  if (!searchterm.empty?)
+    if (!@sargs.empty?) 
+      @m = @fargs.merge(@sargs)
+    else
+      @m = @fargs
+    end
+    errors = errors.find(@m)
+  elsif (!filter.empty?)
+    errors = errors.find(@fargs)
+  else
+    errors = errors.find
+  end
+
+
+  errors = errors.skip(offset).limit(App.rows_per_page).sort({ 'time' => -1 }).to_a
+
+  @logs = []
+  errors.each do |error|
+    t = error['time'].to_i
+    d = Time.at(t).to_formatted_s(:db)
+    l = level[error['level'].to_i]
+    lc = level_class[error['level'].to_i]
+    
+
+    @logs.push({
+      'date' => d,
+      'level' => l,
+      'level_class' => lc,
+      'errorat' => error['page'],
+      'full_errorat' => error['page'],
+      'errormsg' => error['message'],
+      'error_line' => error['line'],
+      'error_file' => error['file'],
+    })
+  end
+
+  @logs
 end
 
 def get_file_data(offset=0, filter='')
