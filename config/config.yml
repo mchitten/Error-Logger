@@ -1,4 +1,6 @@
+---
 development:
-   user: mchittenden
-   connect_to:
-      - 127.0.0.1:9393
+  user: mchittenden
+  connect_to:
+  - 127.0.0.1:9393
+  last_bundle: 1360768002
