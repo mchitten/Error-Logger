@@ -7,3 +7,5 @@ gem 'mongo'
 gem 'mongodb'
 gem 'mongoid'
 gem 'bson_ext'
+gem 'json'
+

@@ -19,6 +19,7 @@ Installation
 ```php
 set_error_handler('php_error_logger_log_msg');
 function php_error_logger_log_msg($errno, $errstr, $errfile, $errline) {
+  $backtrace = debug_backtrace();
   $page = $_SERVER['REQUEST_URI'];
   $a = array(
     'level' => $errno,
@@ -27,6 +28,11 @@ function php_error_logger_log_msg($errno, $errstr, $errfile, $errline) {
     'file' => $errfile,
     'line' => $errline,
     'time' => time(),
+    'backtrace' => str_replace(
+      array('\"', '\\/'),
+      array('"', '/'),
+      json_encode($backtrace)
+    ),
   );
 
   $d = '';

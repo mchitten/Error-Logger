@@ -3,6 +3,7 @@ require 'sinatra/base'
 require 'mustache/sinatra'
 require './f'
 require 'yaml'
+require 'json'
 require 'mongo'
 require 'mongoid'
 include Mongo
@@ -39,6 +40,7 @@ class App < Sinatra::Base
 
 
   post '/write/?' do
+    params['backtrace'] = JSON.parse(params['backtrace'])
     settings.mongo['errors'].insert params
   end
 
@@ -189,7 +191,11 @@ def db_get_data(offset=0, filter='', searchterm = '')
     d = Time.at(t).to_formatted_s(:db)
     l = level[error['level'].to_i]
     lc = level_class[error['level'].to_i]
-    
+
+    if (error['backtrace'].is_a? Array)
+      error['file'] = error['backtrace'][0]['file']
+      error['line'] = error['backtrace'][0]['line']
+    end
 
     @logs.push({
       'date' => d,
