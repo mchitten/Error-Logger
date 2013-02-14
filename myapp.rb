@@ -41,6 +41,7 @@ class App < Sinatra::Base
 
   post '/write/?' do
     params['backtrace'] = JSON.parse(params['backtrace'])
+    p params
     settings.mongo['errors'].insert params
   end
 
@@ -51,7 +52,6 @@ class App < Sinatra::Base
   end
 
   get '/d' do
-    content_type :text
     settings.mongo['errors'].remove
   end
 
@@ -60,7 +60,10 @@ class App < Sinatra::Base
     @logs = []
     @content = ''
 
-    @logs = db_get_data()
+    d = db_get_data()
+    @logs = d['logs']
+    @count = @logs.length
+    @backtrace = d['backtrace']
     @show_button = true
 
     mustache :index
@@ -75,7 +78,11 @@ class App < Sinatra::Base
 
   post '/more/*' do
     n = params[:splat][0].to_i
-    @logs = db_get_data(n)
+
+    d = db_get_data(n)
+    @logs = d['logs']
+    @count = @logs.length
+    @backtrace = d['backtrace']
     @content = ''
 
     mustache :more_posts, :layout => false
@@ -85,9 +92,10 @@ class App < Sinatra::Base
     f = params[:splat][0]
     n = params[:splat][1].to_i
 
-    @logs = db_get_data(n, f)
-    @content = ''
+    d = db_get_data(n, f)
+    @logs = d['logs']
     @count = @logs.length
+    @backtrace = d['backtrace']
 
     mustache :more_posts, :layout => false
   end
@@ -95,7 +103,10 @@ class App < Sinatra::Base
   get '/filter/*' do |filter|
     f = params[:splat][0]
 
-    @logs = db_get_data(0, filter)
+    d = db_get_data(0, f)
+    @logs = d['logs']
+    @count = @logs.length
+    @backtrace = d['backtrace']
 
     @content = "Found #{@logs.count}"
     @show_button = true
@@ -104,11 +115,6 @@ class App < Sinatra::Base
     end
  
     mustache :index
-  end
-
-  get '/nolayout' do
-    content_type 'text/plain'
-    mustache :nolayout, :layout => false
   end
 end
 
@@ -185,7 +191,9 @@ def db_get_data(offset=0, filter='', searchterm = '')
 
   errors = errors.skip(offset).limit(App.rows_per_page).sort({ 'time' => -1 }).to_a
 
+  @i = 0
   @logs = []
+  @backtrace = []
   errors.each do |error|
     t = error['time'].to_i
     d = Time.at(t).to_formatted_s(:db)
@@ -197,7 +205,8 @@ def db_get_data(offset=0, filter='', searchterm = '')
       error['line'] = error['backtrace'][0]['line']
     end
 
-    @logs.push({
+    p = {
+      'id' => @i,
       'date' => d,
       'level' => l,
       'level_class' => lc,
@@ -206,10 +215,28 @@ def db_get_data(offset=0, filter='', searchterm = '')
       'errormsg' => error['message'],
       'error_line' => error['line'],
       'error_file' => error['file'],
-    })
+      'backtrace' => []
+    }
+
+    error['backtrace'].to_a.each do |b|
+      p b
+      p['backtrace'] << {
+        'backtrace_line' => (!b['line'].nil? ? b['line'] : ''),
+        'backtrace_file' => (!b['file'].nil? ? b['file'] : ''),
+        'backtrace_function' => (!b['function'].nil? ? b['function'] : ''),
+      }
+    end
+
+    @logs.push(p)
+
+
+    @i += 1
   end
 
-  @logs
+  {
+    'logs' => @logs,
+    'backtrace' => []
+  }
 end
 
 def get_file_data(offset=0, filter='')

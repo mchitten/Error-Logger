@@ -10,6 +10,7 @@
   <th width="30%">File</th>
 </thead>
 {{#logs}}
+<tbody class="endpoint" data-id="{{ id }}">
 <tr class="{{ level_class }}">
 	<td>{{ date }}</td>
 	<td>{{ level }}</td>
@@ -18,6 +19,16 @@
 	<td>{{ error_line }}</td>
 	<td>{{ error_file }}</td>
 </tr>
+</tbody>
+<tbody class="backtrace bt-{{ id }}">
+{{#backtrace}}
+<tr class="backtrace-row">
+	<td colspan="4" class="backtrace-function">{{ backtrace_function }}</td>
+	<td>{{ backtrace_line }} </td>
+	<td>{{ backtrace_file }}</td>
+</tr>
+{{/backtrace}}
+</tbody>
 {{/logs}}
 </table>
 

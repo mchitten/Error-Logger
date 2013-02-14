@@ -7,6 +7,9 @@ class App
       def logs
       	@logs || "Nothing yet..."
       end
+      def backtrace
+        @backtrace
+      end
       def show_button
         @show_button
       end
